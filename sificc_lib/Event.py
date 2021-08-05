@@ -104,13 +104,15 @@ class Event:
         # e and p is in the different modules of SiFiCC
         if self.is_complete_compton \
                 and scatterer.is_point_inside_x(self.real_e_position) \
-                and absorber.is_point_inside_x(self.real_p_position):
+                and absorber.is_point_inside_x(self.real_p_position) \
+                and self.event_type == 2:
             self.is_ideal_compton = True
             self.is_ep = True
             self.is_pe = False
         elif self.is_complete_compton \
                 and scatterer.is_point_inside_x(self.real_p_position) \
-                and absorber.is_point_inside_x(self.real_e_position):
+                and absorber.is_point_inside_x(self.real_e_position) \
+                and self.event_type == 2:
             self.is_ideal_compton = True
             self.is_ep = False
             self.is_pe = True
@@ -295,7 +297,7 @@ class Event:
 
         # return the features only if the event is an ideal compton
         # otherwise return 0s
-        if self.is_ideal_compton and self.event_type==2:
+        if self.is_ideal_compton:
             
             # find cluster index of both e & p
             if self.e_clusters_count == 1:
