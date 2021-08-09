@@ -18,17 +18,17 @@ class MyCallback(keras.callbacks.Callback):
                 f_epoch.write('')
         
     def on_epoch_end(self, epoch, logs=None):
-        y_pred = self.ai.predict(self.ai.data.train_x)
+        y_pred = self.ai.predict(self.ai.data.train_x)[:,:9]
         y_true = self.ai.data.train_row_y
         l_matches = self.ai._find_matches(y_true, y_pred, keep_length=False)
         logs['eff'] = np.mean(l_matches)
-        logs['pur'] = np.sum(l_matches) / np.sum(y_pred[:,0])
+        logs['pur'] = (np.sum(l_matches) / np.sum(y_pred[:,0])) if np.sum(y_pred[:,0]) != 0 else 0
         
-        y_pred = self.ai.predict(self.ai.data.validation_x)
+        y_pred = self.ai.predict(self.ai.data.validation_x)[:,:9]
         y_true = self.ai.data.validation_row_y
         l_matches = self.ai._find_matches(y_true, y_pred, keep_length=False)
         logs['val_eff'] = np.mean(l_matches)
-        logs['val_pur'] = np.sum(l_matches) / np.sum(y_pred[:,0])
+        logs['val_pur'] = (np.sum(l_matches) / np.sum(y_pred[:,0])) if np.sum(y_pred[:,0]) != 0 else 0
         
         self.ai.append_history(logs)
         self.ai.save(self.file_name)
@@ -36,8 +36,8 @@ class MyCallback(keras.callbacks.Callback):
         if self.file_name is not None:
             with open(self.file_name + '.e', 'a') as f_epoch:
                 now = dt.datetime.now()
-                f_epoch.write('loss:{:5.3f} eff:{:5.3f}/{:5.3f} in epoch {:3d} at {} {}\n'.format(
-                    logs['loss'], logs['eff'], logs['val_eff'], 
+                f_epoch.write('loss:{:5.3f} - eff:{:5.3f} pur:{:5.3f} in epoch {:3d} at {} {}\n'.format(
+                    logs['loss'], logs['val_eff'], logs['val_pur'], 
                     epoch, now.date().isoformat(), now.strftime('%H:%M:%S')))
 
         
@@ -51,7 +51,7 @@ class AI:
         self.model = None
         
         self.energy_factor_limit= .06 * 2
-        self.position_absolute_limit = np.array([1.3, 5, 1.3]) * 2
+        self.position_absolute_limit = np.array([1.3, 10, 1.3]) * 2
         
         self.weight_type = 2
         self.weight_e_cluster = 1
@@ -454,6 +454,10 @@ class AI:
         identified_events = np.array(self._find_matches(y_true, y_pred, keep_length=True, mask=[1]+([0]*8))).astype(bool)
         y_pred = self.data._denormalize_targets(y_pred[identified_events])
         y_true = self.data._denormalize_targets(y_true[identified_events])
+        enrg = np.abs(y_true[:,1:3] - y_pred[:,1:3])
+        enrg = enrg.ravel()
+        mean_enrg = np.mean(enrg)
+        std_enrg = np.std(enrg)
         euc = y_true[:,3:9] - y_pred[:,3:9]
         euc = euc.reshape((-1,3))
         euc = np.power(euc, 2)
@@ -477,14 +481,16 @@ class AI:
                                                                  e_cluster_loss * self.weight_e_cluster))
         print('    -Cls p:       {:8.5f} * {:5.2f} = {:7.5f}'.format(p_cluster_loss, self.weight_p_cluster, 
                                                                  p_cluster_loss * self.weight_p_cluster))
-        print('  Accuracy:   {:8.5f}'.format(type__type_accuracy))
+        print('  Accuracy:    {:8.5f}'.format(type__type_accuracy))
         print('    -TP rate:     {:8.5f}'.format(type__type_tp_rate))
         print('    -Cls e rate:  {:8.5f}'.format(e_cluster__cluster_accuracy))
         print('    -Cls p rate:  {:8.5f}'.format(p_cluster__cluster_accuracy))
-        print('  Efficiency: {:8.5f}'.format(effeciency))
-        print('  Purity:     {:8.5f}'.format(purity))
-        print('  Euc mean:   {:8.5f}'.format(mean_euc))
-        print('  Euc std:    {:8.5f}'.format(std_euc))
+        print('  Efficiency:  {:8.5f}'.format(effeciency))
+        print('  Purity:      {:8.5f}'.format(purity))
+        print('  Euc mean:    {:8.5f}'.format(mean_euc))
+        print('  Euc std:     {:8.5f}'.format(std_euc))
+        print('  Energy mean: {:8.5f}'.format(mean_enrg))
+        print('  Energy std:  {:8.5f}'.format(std_enrg))
         
         
         y_pred = self.data.reco_test
@@ -498,6 +504,10 @@ class AI:
         identified_events = np.array(self._find_matches(y_true, y_pred, keep_length=True, mask=[1]+([0]*8))).astype(bool)
         y_pred = self.data._denormalize_targets(y_pred[identified_events])
         y_true = self.data._denormalize_targets(y_true[identified_events])
+        enrg = np.abs(y_true[:,1:3] - y_pred[:,1:3])
+        enrg = enrg.ravel()
+        mean_enrg = np.mean(enrg)
+        std_enrg = np.std(enrg)
         euc = y_true[:,3:9] - y_pred[:,3:9]
         euc = euc.reshape((-1,3))
         euc = np.power(euc, 2)
@@ -506,12 +516,14 @@ class AI:
         std_euc = np.std(euc)
         
         print('\nReco')
-        print('  Accuracy:   {:8.5f}'.format(accuracy))
+        print('  Accuracy:    {:8.5f}'.format(accuracy))
         print('    -TP rate:     {:8.5f}'.format(tp_rate))
-        print('  Efficiency: {:8.5f}'.format(effeciency))
-        print('  Purity:     {:8.5f}'.format(purity))
-        print('  Euc mean:   {:8.5f}'.format(mean_euc))
-        print('  Euc std:    {:8.5f}'.format(std_euc))
+        print('  Efficiency:  {:8.5f}'.format(effeciency))
+        print('  Purity:      {:8.5f}'.format(purity))
+        print('  Euc mean:    {:8.5f}'.format(mean_euc))
+        print('  Euc std:     {:8.5f}'.format(std_euc))
+        print('  Energy mean: {:8.5f}'.format(mean_enrg))
+        print('  Energy std:  {:8.5f}'.format(std_enrg))
 
     def save(self, file_name):
         self.model.save_weights(file_name+'.h5', save_format='h5')
@@ -635,7 +647,7 @@ class AI:
 
         # initialize the data to be plotted
         y_true = self.data._targets[pos:pos+1]
-        y_pred = self.predict(self.data.get_features(pos,pos+1))
+        y_pred = self.predict(self.data.get_features(pos,pos+1))[:,:9]
         clusters = self.data._features[pos:pos+1]
         is_match = self._find_matches(y_true, y_pred)[0] == 1
 
