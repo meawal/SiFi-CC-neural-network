@@ -14,6 +14,7 @@ class AIQlty(AI):
         '''Initializing an instance of SiFi-CC Neural Network
         '''
         super().__init__(data_model, model_name)
+        self.weight_qlty = 1
 
         
     def create_model(**kwrds):
