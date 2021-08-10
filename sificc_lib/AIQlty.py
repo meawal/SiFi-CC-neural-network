@@ -324,6 +324,8 @@ class AIQlty(AI):
         l_matches = self._find_matches(y_true, y_pred, keep_length=False)
         effeciency = np.mean(l_matches)
         purity = np.sum(l_matches) / np.sum(y_pred[:,0])
+        precision = np.sum(y_pred[:,0] * y_true[:,0]) / np.sum(y_pred[:,0])
+        recall = np.sum(y_pred[:,0] * y_true[:,0]) / np.sum(y_true[:,0])
         
         identified_events = np.array(self._find_matches(y_true, y_pred, keep_length=True, mask=[1]+([0]*8))).astype(bool)
         y_pred = self.data._denormalize_targets(y_pred[identified_events])
@@ -358,7 +360,8 @@ class AIQlty(AI):
         print('    -Quality:     {:8.5f} * {:5.2f} = {:7.5f}'.format(qlty_loss, self.weight_qlty, 
                                                                  qlty_loss * self.weight_qlty))
         print('  Accuracy:    {:8.5f}'.format(type__type_accuracy))
-        print('    -TP rate:     {:8.5f}'.format(type__type_tp_rate))
+        print('    -Precision:   {:8.5f}'.format(precision))
+        print('    -Recall:      {:8.5f}'.format(recall))
         print('    -Cls e rate:  {:8.5f}'.format(e_cluster__cluster_accuracy))
         print('    -Cls p rate:  {:8.5f}'.format(p_cluster__cluster_accuracy))
         print('  Efficiency:  {:8.5f}'.format(effeciency))
