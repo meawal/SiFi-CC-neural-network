@@ -529,7 +529,7 @@ class AI:
         print('  Energy std:  {:8.5f}'.format(std_enrg))
 
     def save(self, file_name):
-        self.model.save_weights(file_name+'.h5', save_format='h5')
+        self.model.save_weights('ai_files/' + file_name+'.h5', save_format='h5')
         with open('ai_files/' + file_name + '.hst', 'wb') as f_hist:
             pkl.dump(self.history, f_hist)
         with open('ai_files/' + file_name + '.opt', 'wb') as f_hist:
@@ -537,7 +537,7 @@ class AI:
         
             
     def load(self, file_name, optimizer=False):
-        self.model.load_weights(file_name+'.h5')
+        self.model.load_weights('ai_files/' + file_name+'.h5')
         with open('ai_files/' + file_name+'.hst', 'rb') as f_hist:
             self.history = pkl.load(f_hist)
         if optimizer:
