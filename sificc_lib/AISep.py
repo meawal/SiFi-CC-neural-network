@@ -203,12 +203,12 @@ class AISep(AI):
     def compile_model(self, learning_rate=0.0003):
         self.model.compile(optimizer= keras.optimizers.Nadam(learning_rate), 
                            loss = {
-                               'typ_e_cluster': self._e_cluster_loss,
-                               'typ_p_cluster': self._p_cluster_loss,
+                               'typ_e_cluster': self._e_cluster_loss_basic,
+                               'typ_p_cluster': self._p_cluster_loss_basic,
                                'pos_e_cluster': self._e_cluster_loss,
                                'pos_p_cluster': self._p_cluster_loss,
-                               'enrg_e_cluster': self._e_cluster_loss,
-                               'enrg_p_cluster': self._p_cluster_loss,
+                               'enrg_e_cluster': self._e_cluster_loss_basic,
+                               'enrg_p_cluster': self._p_cluster_loss_basic,
                                'typ_type' : self._type_loss,
                                'pos_x': self._pos_loss,
                                'pos_y': self._pos_loss,
@@ -241,6 +241,34 @@ class AISep(AI):
                                'pos_z': self.weight_pos_z * self._weight_pos_z_fltr,
                                'enrg_energy': self.weight_energy * self._weight_energy_fltr,
                            })
+    
+    def _e_cluster_loss_basic(self, y_true, y_pred):
+        '''Identical to _e_cluster_loss but without saving the values to pass to 
+        the last dense layers.'''
+        event_filter = y_true[:,0] # ∈ n
+        e_cluster = K.reshape(y_true[:,1], (-1,1)) # ∈ nx1
+        # loss ∈ n
+        loss = keras.losses.sparse_categorical_crossentropy(e_cluster, y_pred)
+        
+        # composing _e_cluster_match ; a mask for the matched clusters of e
+        y_pred_sparse = K.cast(K.argmax(y_pred), y_true.dtype) # ∈ n
+        
+        # return (n * n) ∈ n
+        return event_filter * loss
+    
+    def _p_cluster_loss_basic(self, y_true, y_pred):
+        '''Identical to _p_cluster_loss but without saving the values to pass to 
+        the last dense layers.'''
+        event_filter = y_true[:,0] # ∈ n
+        p_cluster = K.reshape(y_true[:,1], (-1,1)) # ∈ nx1
+        # loss ∈ n
+        loss = keras.losses.sparse_categorical_crossentropy(p_cluster, y_pred)
+        
+        # composing _p_cluster_match; a mast for the matched clusters of p
+        y_pred_sparse = K.cast(K.argmax(y_pred), y_true.dtype) # ∈ n
+        
+        # return (n*n) ∈ n
+        return event_filter * loss
     
     def activate_all(self):
         for layer in self.model.layers:
