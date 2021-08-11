@@ -1,0 +1,4 @@
+*.npz
+sificc_lib/__pycache__
+.ipynb_checkpoints
+
