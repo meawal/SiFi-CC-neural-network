@@ -14,7 +14,7 @@ class MyCallback(keras.callbacks.Callback):
         self.file_name = file_name
         
         if file_name is not None:
-            with open(self.file_name + '.e', 'w') as f_epoch:
+            with open('ai_files/' + self.file_name + '.e', 'w') as f_epoch:
                 f_epoch.write('')
         
     def on_epoch_end(self, epoch, logs=None):
@@ -34,7 +34,7 @@ class MyCallback(keras.callbacks.Callback):
         self.ai.save(self.file_name)
         
         if self.file_name is not None:
-            with open(self.file_name + '.e', 'a') as f_epoch:
+            with open('ai_files/' + self.file_name + '.e', 'a') as f_epoch:
                 now = dt.datetime.now()
                 f_epoch.write('loss:{:5.3f} - eff:{:5.3f} pur:{:5.3f} in epoch {:3d} at {} {}\n'.format(
                     logs['loss'], logs['val_eff'], logs['val_pur'], 
@@ -530,18 +530,18 @@ class AI:
 
     def save(self, file_name):
         self.model.save_weights(file_name+'.h5', save_format='h5')
-        with open(file_name + '.hst', 'wb') as f_hist:
+        with open('ai_files/' + file_name + '.hst', 'wb') as f_hist:
             pkl.dump(self.history, f_hist)
-        with open(file_name + '.opt', 'wb') as f_hist:
+        with open('ai_files/' + file_name + '.opt', 'wb') as f_hist:
             pkl.dump(self.model.optimizer.get_weights(), f_hist)
         
             
     def load(self, file_name, optimizer=False):
         self.model.load_weights(file_name+'.h5')
-        with open(file_name+'.hst', 'rb') as f_hist:
+        with open('ai_files/' + file_name+'.hst', 'rb') as f_hist:
             self.history = pkl.load(f_hist)
         if optimizer:
-            with open(file_name+'.opt', 'rb') as f_hist:
+            with open('ai_files/' + file_name+'.opt', 'rb') as f_hist:
                 self.model.optimizer.set_weights(pkl.load(f_hist))
         
             
