@@ -64,12 +64,10 @@ class AI:
         self.callback = MyCallback(self, model_name)
         
     def train(self,*, epochs=100, verbose=0, shuffle=True, 
-              shuffle_clusters=False, callbacks=None):
+              shuffle_clusters=False, callbacks=[]):
         '''Trains the AI for a fixed number of epoches
         '''
-        if callbacks is None:
-            callbacks = [self.callback]
-        else:
+        if self.callback not in callbacks:
             callbacks.append(self.callback)
             
         history = self.model.fit(self.data.generate_batch(shuffle=shuffle, augment=shuffle_clusters), 
