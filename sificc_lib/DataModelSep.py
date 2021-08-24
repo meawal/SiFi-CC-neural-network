@@ -30,7 +30,7 @@ class DataModelSep():
     }
     '''
     def __init__(self, file_name, *, batch_size = 64, validation_percent = .05, test_percent = .1, 
-                 weight_compton = 1, weight_non_compton = .75):
+                 weight_compton = 1, weight_non_compton = 1):
         self.validation_percent = validation_percent
         self.test_percent = test_percent
         self.batch_size = batch_size
@@ -40,7 +40,7 @@ class DataModelSep():
         self.cluster_size = 9
         self.append_dim = True
         
-        self.__std_factor = 10
+        self.__std_factor = 15
         
         # loading training matrices
         with open(file_name, 'rb') as f_train:
