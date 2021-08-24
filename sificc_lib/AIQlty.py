@@ -17,10 +17,7 @@ class AIQlty(AI):
         self.weight_qlty = 1
 
         
-    def create_model(**kwrds):
-        print('no call')
-    
-    def init_model(self, conv_layers=[], classifier_layers=[], dense_layers=[],
+    def create_model(self, conv_layers=[], classifier_layers=[], dense_layers=[],
                    type_layers=[], pos_layers=[], energy_layers=[], base_l2=0, limbs_l2=0, 
                    conv_dropouts=[], activation='relu', plot_summary=True):
         if len(conv_dropouts) == 0:

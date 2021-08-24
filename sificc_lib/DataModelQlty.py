@@ -40,9 +40,9 @@ class DataModelQlty():
     }
     '''
     def __init__(self, file_name, *, batch_size = 64, validation_percent = .05, test_percent = .1, 
-                 weight_compton = 1, weight_non_compton = .75):
-        self.validation_percent = validation_percent
-        self.test_percent = test_percent
+                 weight_compton = 1, weight_non_compton = 1):
+        self.__validation_percent = validation_percent
+        self.__test_percent = test_percent
         self.batch_size = batch_size
         self.weight_compton = weight_compton
         self.weight_non_compton = weight_non_compton
@@ -50,7 +50,8 @@ class DataModelQlty():
         self.cluster_size = 9
         self.append_dim = True
         
-        self.__std_factor = 10
+        self.__std_factor = 15
+        self.__balanced_training = False
         
         # loading training matrices
         with open(file_name, 'rb') as f_train:
@@ -67,13 +68,14 @@ class DataModelQlty():
         # define clusters limit
         self.clusters_limit = self._features.shape[1] // self.cluster_size
         
-        # define number of events
-        self.length = self._targets.shape[0]
-        
         #normalize features, targets, and reco
         self._features = (self._features - self.__mean_features) / self.__std_features
         self._targets = (self._targets - self.__mean_targets) / self.__std_targets
         self._reco = (self._reco - self.__mean_targets[:-2]) / self.__std_targets[:-2]
+        
+        # compute the starting position of the validation and test sets
+        self.validation_start_pos = int(self.length * (1-self.validation_percent-self.test_percent))
+        self.test_start_pos = int(self.length * (1-self.test_percent))
         
     def _denormalize_features(self, data):
         if data.shape[-1] == self._features.shape[-1]:
@@ -121,6 +123,17 @@ class DataModelQlty():
             return self._features[start:end]
         
     def shuffle(self, only_train=True):
+        # if balancing the data is activated, select another random sample from the 
+        # background events 
+        if self.__balanced_training:
+            non_comptons = np.random.choice(self.__background_pool, self.__n_comptons)
+            index = np.concatenate([non_comptons, self.__base_index], axis=0)
+            self._features = self.__features_all[index]
+            self._targets = self.__targets_all[index]
+            self._reco = self.__reco_all[index]
+            self._seq = self.__seq_all[index]
+            self._qlty = self.__qlty_all[index]
+            
         limit = self.validation_start_pos if only_train else self.length
         sequence = np.arange(self.length)
         sequence[:limit] = np.random.permutation(limit)
@@ -135,10 +148,72 @@ class DataModelQlty():
     def steps_per_epoch(self):
         return int(np.ceil(self.validation_start_pos/self.batch_size))
     
-    def generate_batch(self, shuffle=True, augment=False):
+    @property
+    def balance_training(self):
+        '''Balance the samples in the training set in order to make the number of Compton
+        samples equal to the number of background samples. Default value is False.'''
+        return self.__balanced_training
+    
+    @balance_training.setter
+    def balance_training(self, value):
+        # when balancing is activated
+        if (not self.__balanced_training) and (value==True):
+            # copy the original datasets
+            self.__features_all = self._features.copy()
+            self.__targets_all = self._targets.copy()
+            self.__reco_all = self._reco.copy()
+            self.__seq_all = self._seq.copy()
+            self.__qlty_all = self._qlty.copy()
+            
+            # compute the list of background events to choose a sample from and
+            # the list of base features (all the comptons + validation set + test set)
+            train_type = self.train_y['type'].ravel().astype(bool)
+            self.__n_comptons = train_type.sum()
+            comptons = np.where(train_type)[0]
+            self.__background_pool = np.where(~train_type)[0]
+            valid_test = np.arange(self.validation_start_pos, self.length)
+            self.__base_index = np.concatenate([comptons, valid_test], axis=0)
+            
+            # select a sample from the background and add it to the base features to
+            # compose a balanced training set
+            non_comptons = np.random.choice(self.__background_pool, self.__n_comptons)
+            index = np.concatenate([non_comptons, self.__base_index], axis=0)
+            self._features = self.__features_all[index]
+            self._targets = self.__targets_all[index]
+            self._reco = self.__reco_all[index]
+            self._seq = self.__seq_all[index]
+            self._qlty = self.__qlty_all[index]
+            
+            # fix the position of the validation and test starting positions
+            diff = self.__targets_all.shape[0] - self._targets.shape[0]
+            self.validation_start_pos = self.validation_start_pos - diff
+            self.test_start_pos = self.test_start_pos - diff
+            
+            # shuffle the training part
+            self.shuffle(only_train=True)
+            
+        # when balancing is deactivated
+        elif self.__balanced_training and (value==False):
+            # compute the difference in size
+            diff = self.__targets_all.shape[0] - self._targets.shape[0]
+            
+            # restore the original values
+            self._features = self.__features_all
+            self._targets = self.__targets_all
+            self._reco = self.__reco_all
+            self._seq = self.__seq_all
+            self._qlty = self.__qlty_all
+            
+            # fix the position of the validation and test starting positions
+            self.validation_start_pos = self.validation_start_pos - diff
+            self.test_start_pos = self.test_start_pos - diff
+            
+        self.__balanced_training = value
+        
+    
+    def generate_batch(self, augment=False):
         while True:
-            if shuffle:
-                self.shuffle(only_train=True)
+            self.shuffle(only_train=True)
 
             for step in range(self.steps_per_epoch):
                 start = step * self.batch_size
@@ -180,12 +255,16 @@ class DataModelQlty():
     
     ################# Properties #################
     @property
-    def validation_start_pos(self):
-        return int(self.length * (1-self.validation_percent-self.test_percent))
+    def length(self):
+        return self._targets.shape[0]
     
     @property
-    def test_start_pos(self):
-        return int(self.length * (1-self.test_percent))
+    def validation_percent(self):
+        return self.__validation_percent
+    
+    @property 
+    def test_percent(self):
+        return self.__test_percent
     
     @property
     def train_x(self):
