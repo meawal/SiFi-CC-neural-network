@@ -732,12 +732,12 @@ class AI:
         me = 0.510999
         arc_base = np.abs(1 - me *(1/p - 1/(e+p)))
         valid_arc = arc_base <= 1
-        origin_seq_no = self.data._seq[self.data.test_start_pos:][identified]
-
+        
         # filter out invalid events from the predictions and events types
         y_pred = y_pred[valid_arc]
         l_all_match = np.array(l_all_match)[valid_arc]
         l_pos_match = np.array(l_pos_match)[valid_arc]
+        origin_seq_no = origin_seq_no[valid_arc]
 
         # create event type list (0:wrong, 1:only pos match, 2:total match)
         l_event_type = np.zeros(len(l_all_match))
@@ -806,7 +806,7 @@ class AI:
         }
 
         file['ConeList'] = uproot.newtree(branch, title='Neural network cone list')
-
+        
         # filling the branch
         file['ConeList'].extend({
             'GlobalEventNumber': origin_seq_no,
@@ -872,6 +872,7 @@ class AI:
         # filter the results with the identified events
         identified = y_true[:,0].astype(bool)
         y_true = y_true[identified,:-2]
+        origin_seq_no = self.data._seq[self.data.test_start_pos:][identified]
 
         # denormalize the predictions back to the real values
         y_true = self.data._denormalize_targets(y_true)
@@ -885,6 +886,7 @@ class AI:
 
         # filter out invalid events from the predictions and events types
         y_true = y_true[valid_arc]
+        origin_seq_no = origin_seq_no[valid_arc]
 
         # zeros list
         size = y_true.shape[0]
@@ -913,6 +915,7 @@ class AI:
 
         # defining the branch
         branch = {
+            'GlobalEventNumber': 'int32', # event sequence in the original simulation file
             'v_x': 'float32', # electron position
             'v_y': 'float32',
             'v_z': 'float32',
@@ -953,6 +956,7 @@ class AI:
 
         # filling the branch
         file['ConeList'].extend({
+            'GlobalEventNumber': origin_seq_no,
             'v_x': e_pos_x, 
             'v_y': e_pos_y,
             'v_z': e_pos_z,
