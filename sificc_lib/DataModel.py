@@ -62,6 +62,9 @@ class DataModel():
         self._targets = (self._targets - self.__mean_targets) / self.__std_targets
         self._reco = (self._reco - self.__mean_targets[:-2]) / self.__std_targets[:-2]
         
+        self.__init_valid_test_positions()
+        
+    def __init_valid_test_positions(self):
         # compute the starting position of the validation and test sets
         self.validation_start_pos = int(self.length * (1-self.validation_percent-self.test_percent))
         self.test_start_pos = int(self.length * (1-self.test_percent))

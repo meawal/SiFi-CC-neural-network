@@ -297,7 +297,7 @@ class Event:
 
         # return the features only if the event is an ideal compton
         # otherwise return 0s
-        if self.is_ideal_compton:
+        if self.is_distributed_clusters and self.is_ideal_compton:
             
             # find cluster index of both e & p
             if self.e_clusters_count == 1:

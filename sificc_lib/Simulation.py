@@ -38,7 +38,7 @@ class Simulation:
                                       )
         
     def iterate_events(self, basket_size=100000, desc='processing root file', 
-                       bar_update_size=1000):
+                       bar_update_size=1000, entrystart=None):
         '''Iterate throughout all the events within the ROOT file. 
         Returns an event object on each step.
         '''
@@ -46,7 +46,7 @@ class Simulation:
         bar_step = 0
         for start, end, basket in self.tree.iterate(Event.l_leaves, entrysteps=basket_size, 
                                                     reportentries=True, namedecode='utf-8',
-                                                    entrystart=None, entrystop=None):
+                                                    entrystart=entrystart, entrystop=None):
             length = end-start
             for idx in range(length):
                 yield self.__event_at_basket(basket, idx)
