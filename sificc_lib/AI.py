@@ -47,6 +47,9 @@ class AI:
         '''
         self.data = data_model
         
+        # the threshold of predicting a compton of a sigmoid (0,1)
+        self.type_threshold = .5
+        
         self.history = {}
         self.model = None
         
@@ -289,7 +292,8 @@ class AI:
     
     def predict(self, data, denormalize=False, verbose=0):
         pred = self.model.predict(data)
-        pred = np.concatenate([np.round(pred[2]), 
+        type_pred = (pred[2] >= self.type_threshold).astype(int)
+        pred = np.concatenate([type_pred,
                 pred[6], 
                 pred[3][:,[0]], pred[4][:,[0]], pred[5][:,[0]], 
                 pred[3][:,[1]], pred[4][:,[1]], pred[5][:,[1]], 
@@ -463,7 +467,7 @@ class AI:
         euc = np.sqrt(np.sum(euc, axis=1))
         mean_euc = np.mean(euc)
         std_euc = np.std(euc)
-                
+        
         print('AI model')
         print('  Loss:       {:8.5f}'.format(loss))
         print('    -Type:        {:8.5f} * {:5.2f} = {:7.5f}'.format(type_loss, self.weight_type, 
@@ -517,14 +521,15 @@ class AI:
         
         print('\nReco')
         print('  Accuracy:    {:8.5f}'.format(accuracy))
-        print('    -TP rate:     {:8.5f}'.format(tp_rate))
+        print('    -Recall:      {:8.5f}'.format(tp_rate))
         print('  Efficiency:  {:8.5f}'.format(effeciency))
         print('  Purity:      {:8.5f}'.format(purity))
         print('  Euc mean:    {:8.5f}'.format(mean_euc))
         print('  Euc std:     {:8.5f}'.format(std_euc))
         print('  Energy mean: {:8.5f}'.format(mean_enrg))
         print('  Energy std:  {:8.5f}'.format(std_enrg))
-
+        
+        
     def save(self, file_name):
         self.model.save_weights('ai_files/' + file_name+'.h5', save_format='h5')
         with open('ai_files/' + file_name + '.hst', 'wb') as f_hist:

@@ -42,7 +42,8 @@ class Simulation:
         '''Iterate throughout all the events within the ROOT file. 
         Returns an event object on each step.
         '''
-        prog_bar = tqdm(total=self.num_entries, ncols=100, file=sys.stdout, desc=desc)
+        total = self.num_entries if entrystart is None else self.num_entries - entrystart
+        prog_bar = tqdm(total=total, ncols=100, file=sys.stdout, desc=desc)
         bar_step = 0
         for start, end, basket in self.tree.iterate(Event.l_leaves, entrysteps=basket_size, 
                                                     reportentries=True, namedecode='utf-8',
